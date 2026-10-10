@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>採用試験〔数学〕</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="site-header">
+    <div class="header-top">
+      <h1>WAM日暮里校  アルバイト採用試験〔数学〕</h1>
+      <div id="timer" class="timer" hidden aria-live="off"><span class="timer-label">残り時間</span><span id="timerValue">10:00</span></div>
+    </div>
+    <div class="progress" aria-hidden="true">
+      <div id="progressBar"></div>
+    </div>
+    <nav id="pager" class="pager" aria-label="問題一覧"></nav>
+  </header>
+
+  <main id="app"></main>
+
+  <footer class="site-footer">
+    <button id="prevBtn" class="btn ghost" type="button">← 前へ</button>
+    <span id="pageInfo"></span>
+    <button id="nextBtn" class="btn primary" type="button">次へ →</button>
+  </footer>
+
+  <script src="data.js"></script>
+<script src="script.js"></script>
+</body>
+
+</html>

@@ -409,3 +409,50 @@ button.mark.on:disabled { background: var(--primary); opacity: .75; border-color
 .score-row { display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap; }
 .staff-note { margin: 8px 0 12px; padding: 10px 14px; background: #eef2fd; border: 1px solid var(--border); border-radius: 8px; font-size: .95rem; }
 kbd { border: 1px solid #999; border-bottom-width: 2px; border-radius: 4px; padding: 0 6px; background: #fff; font-family: inherit; font-size: .9em; }
+
+/* ===== 科目選択 ===== */
+.subject-links { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
+.subject-link { color: #fff; border: 1px solid rgba(255, 255, 255, .6); border-radius: 15px; padding: 3px 14px; text-decoration: none; font-size: .9rem; }
+.subject-link.on { background: #fff; color: var(--primary); font-weight: bold; }
+
+/* ===== 科目選択ページ ===== */
+.hub-list { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin: 18px 0; }
+.hub-item { border: 2px solid var(--border); border-radius: 10px; padding: 14px 18px; min-width: 200px; background: #fff; }
+.hub-item.done { background: #f1f3f6; color: var(--muted); }
+.hub-name { font-size: 1.4rem; font-weight: bold; }
+.hub-meta, .hub-status { font-size: .9rem; color: var(--muted); margin: 4px 0 8px; }
+.hub-note { color: var(--muted); font-size: .9rem; }
+.subject-heading { margin-top: 32px; border-bottom: 2px solid var(--primary); padding-bottom: 4px; }
+
+/* ===== 記述欄（英語）／確認ダイアログ ===== */
+.text-input { flex: 1; min-width: 0; max-width: 420px; font-size: 1.1rem; padding: 6px 10px; border: 2px solid var(--border); border-radius: 6px; background: #fff; ime-mode: disabled; font-family: "Segoe UI", Arial, sans-serif; }
+.text-input:focus { outline: none; border-color: var(--primary); }
+.text-input:disabled { background: #f1f3f6; }
+.dlg .fs-box p.dlg-title { color: var(--text); font-size: 1.1rem; }
+.dlg .fs-box p { color: var(--text); }
+.dlg .btn { margin: 0 6px; }
+
+
+/* 小問ごとの設問文 */
+.prompt { margin: 0 0 8px; line-height: 1.7; }
+.prompt .opts { display: block; color: var(--text); }
+.passage { background: #fafafa; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; line-height: 1.9; font-family: "Segoe UI", Arial, sans-serif; }
+.passage h4 { margin: 0 0 6px; text-align: center; }
+
+/* 設問文の横に小問番号を並べる（英語） */
+.prompt { display: flex; gap: 10px; align-items: baseline; font-size: 1.1rem; line-height: 1.8; margin-bottom: 8px; }
+.prompt .label { font-weight: bold; flex: none; }
+.prompt-body { flex: 1; min-width: 0; }
+.prompt-body .ja { display: block; font-size: .92rem; color: var(--muted); }
+.blank-line { display: inline-block; width: 4.5em; border-bottom: 2px solid var(--text); margin: 0 3px; vertical-align: baseline; }
+.part.plain .mark-sheet { margin-top: 4px; }
+
+/* 英語：指定語の強調／縦並びの選択肢 */
+.given-word { background: #fff2a8; font-weight: bold; padding: 0 4px; border-radius: 3px; }
+.opts-v { display: block; margin-top: 4px; }
+.opts-v > span { display: block; }
+
+/* 英語：解答欄が複数ある小問は横に並べる */
+.part.plain .mark-sheet { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.part.plain .mark-row { border-bottom: none; padding: 4px 0; }
+.part.plain .mark-row:has(.text-input) { flex: 1 1 180px; max-width: 320px; }

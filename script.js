@@ -146,6 +146,28 @@ function renderHub() {
   if (g) g.addEventListener("click", grade);
 }
 
+/* ===== 記述問題の案内（半角/全角キーの位置を示すキーボード図） ===== */
+function figKeyboardSvg() {
+  const key = (x, y, w, label, hot, fs = 11) =>
+    `<rect x="${x}" y="${y}" width="${w}" height="30" rx="4" class="kb-key${hot ? " hot" : ""}"/>` +
+    `<text x="${x + w / 2}" y="${y + 19}" text-anchor="middle" font-size="${fs}" class="kb-txt${hot ? " hot" : ""}">${label}</text>`;
+  const row = (y, x0, items) => {
+    let x = x0;
+    return items.map(([label, w, hot, fs]) => { const s = key(x, y, w, label, hot, fs); x += w + 4; return s; }).join("");
+  };
+  return `<svg class="kb-svg" viewBox="0 0 232 140" role="img" aria-label="キーボードの左上にある「半角/全角」キーの位置を示す図">
+  ${row(4, 4, [["Esc", 34], ["F1", 34], ["F2", 34], ["F3", 34], ["F4", 34]])}
+  ${row(38, 4, [["半角/全角", 50, true, 10], ["1", 30], ["2", 30], ["3", 30], ["4", 30], ["5", 30]])}
+  ${row(72, 4, [["Tab", 44], ["Q", 30], ["W", 30], ["E", 30], ["R", 30], ["T", 30]])}
+  ${row(106, 4, [["英数", 52], ["A", 30], ["S", 30], ["D", 30], ["F", 30], ["G", 30]])}
+  </svg>`;
+}
+
+const imeNotice = () => `<div class="ime-notice">
+  <div class="ime-text"><strong>英語を入力する問題です．</strong><br>キーボードを半角英数字に切り替える場合は，キーボード左上の「<strong>半角/全角</strong>」キーを押してください．<br><span class="ime-sub">（日本語入力のままでも，半角の英字だけが入力されます）</span></div>
+  ${figKeyboardSvg()}
+</div>`;
+
 function renderQuestion(qi) {
   const q = questions[qi];
   let labelIdx = 0;
@@ -190,6 +212,7 @@ function renderQuestion(qi) {
   <section class="card">
     <div class="q-head"><span class="q-no">問${qi + 1}</span><span class="q-pt">（${qPoints(q)}点${q.parts.length > 1 ? `：各${partPoints(q)}点` : ""}）</span></div>
     ${state.timeUp ? `<p class="timeup-note">制限時間が終了しました．これ以上解答を変更することはできません．</p>` : ""}
+    ${q.parts.some(p => p.tpl.some(isText)) ? imeNotice() : ""}
     <div class="q-text">${q.text}</div>
     ${q.figure ? `<div class="figure">${q.figure()}</div>` : ""}
     ${parts}

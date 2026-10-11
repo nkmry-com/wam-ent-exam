@@ -169,7 +169,7 @@ function renderQuestion(qi) {
       let body;
       if (s.text) {
         // 記述欄：英語入力用のボックス
-        body = `<input type="text" class="text-input" data-p="${pi}" data-k="${s.k}" value="${esc(vals[s.k])}" lang="en" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="English"${state.timeUp ? " disabled" : ""}>`;
+        body = `<input type="text" class="text-input" data-p="${pi}" data-k="${s.k}" value="${esc(vals[s.k])}" lang="en" inputmode="latin" pattern="[A-Za-z]*" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="English"${state.timeUp ? " disabled" : ""}>`;
       } else {
         const btn = (v, text, aria) =>
           `<button type="button" class="mark${vals[s.k] === v ? " on" : ""}" data-p="${pi}" data-k="${s.k}" data-v="${v}" aria-label="${aria}"${state.timeUp ? " disabled" : ""}>${text}</button>`;
@@ -222,19 +222,24 @@ function renderQuestion(qi) {
       }
       renderPager();
     };
-    const clean = () => { const c = inp.value.replace(NON_ASCII, ""); if (c !== inp.value) inp.value = c; };
+    const clean = () => { const c = inp.value.replace(NON_ALPHA, ""); if (c !== inp.value) inp.value = c; };
 
-    // 日本語入力がオンのとき，文字キーは key="Process"（keyCode 229）で届く．
-    // 変換を始めさせず，押されたキーを英字としてそのまま入力する
+    // 半角英字（A〜Z, a〜z）以外のキーは受け付けない．
+    // 日本語入力がオンのとき，文字キーは key="Process"（keyCode 229）で届く．変換を始めさせず，押されたキーが英字ならそのまま入力する
     inp.addEventListener("keydown", e => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      if (!(e.isComposing || e.keyCode === 229 || e.key === "Process")) return;
-      const ch = charFromCode(e);
-      if (ch === null) return;
-      e.preventDefault();
-      if (state.timeUp || inp.disabled) return;
-      inp.setRangeText(ch, inp.selectionStart, inp.selectionEnd, "end");
-      inp.dispatchEvent(new Event("input", { bubbles: true }));
+      const composing = e.isComposing || e.keyCode === 229 || e.key === "Process";
+      if (composing) {
+        if (!CHAR_KEY.test(e.code)) return;
+        e.preventDefault();
+        const m = /^Key([A-Z])$/.exec(e.code);
+        if (!m || state.timeUp || inp.disabled) return;
+        const upper = e.shiftKey !== e.getModifierState("CapsLock");
+        inp.setRangeText(upper ? m[1] : m[1].toLowerCase(), inp.selectionStart, inp.selectionEnd, "end");
+        inp.dispatchEvent(new Event("input", { bubbles: true }));
+      } else if (e.key.length === 1 && !/[A-Za-z]/.test(e.key)) {
+        e.preventDefault();     // 数字・記号・スペースなどは入力させない
+      }
     });
     inp.addEventListener("beforeinput", e => {
       if (e.inputType === "insertCompositionText") e.preventDefault();
@@ -248,27 +253,10 @@ function renderQuestion(qi) {
   });
 }
 
-// 半角のASCII文字と ’ ‘ 以外
-const NON_ASCII = /[^\x20-\x7E’‘]/g;
-
-// 物理キー（e.code）から，入力される英字・数字・記号を求める（日本語キーボード配列を想定）．対応しないキーは null
-function charFromCode(e) {
-  const c = e.code, sh = e.shiftKey;
-  let m;
-  if ((m = /^Key([A-Z])$/.exec(c))) {
-    const upper = sh !== e.getModifierState("CapsLock");
-    return upper ? m[1] : m[1].toLowerCase();
-  }
-  if ((m = /^(?:Digit|Numpad)([0-9])$/.exec(c))) {
-    if (!sh || c.startsWith("Numpad")) return m[1];
-    return { 1: "!", 2: '"', 3: "#", 4: "$", 5: "%", 6: "&", 7: "'", 8: "(", 9: ")" }[m[1]] ?? null;
-  }
-  const map = {
-    Space: [" ", " "], Minus: ["-", "="], Comma: [",", "<"], Period: [".", ">"], Slash: ["/", "?"],
-    Semicolon: [";", "+"], Quote: [":", "*"], IntlYen: ["\\", "|"]
-  };
-  return map[c] ? map[c][sh ? 1 : 0] : null;
-}
+// 半角英字以外
+const NON_ALPHA = /[^A-Za-z]/g;
+// 文字を入力するキー（日本語入力中でも，これらは入力させない／英字に置き換える）
+const CHAR_KEY = /^(Key[A-Z]|Digit\d|Numpad\d|Space|Minus|Equal|Comma|Period|Slash|Semicolon|Quote|Backquote|Bracket(Left|Right)|Backslash|Intl(Yen|Ro))$/;
 
 function renderFinal() {
   const unanswered = questions.map((_, i) => i).filter(i => !isAnswered(i)).map(i => i + 1);

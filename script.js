@@ -164,7 +164,7 @@ function figKeyboardSvg() {
 }
 
 const imeNotice = () => `<div class="ime-notice">
-  <div class="ime-text"><strong>英語を入力する問題です．</strong><br>キーボードを半角英数字に切り替える場合は，キーボード左上の「<strong>半角/全角</strong>」キーを押してください．<br><span class="ime-sub">（日本語入力のままでも，半角の英字だけが入力されます）</span></div>
+  <div class="ime-text"><strong>英語を入力する問題です．</strong><br>キーボードを半角英数字に切り替える場合は，キーボード左上の「<strong>半角/全角</strong>」キーを押してください．</div>
   ${figKeyboardSvg()}
 </div>`;
 
@@ -191,7 +191,7 @@ function renderQuestion(qi) {
       let body;
       if (s.text) {
         // 記述欄：英語入力用のボックス
-        body = `<input type="text" class="text-input" data-p="${pi}" data-k="${s.k}" value="${esc(vals[s.k])}" lang="en" inputmode="latin" pattern="[A-Za-z]*" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="English"${state.timeUp ? " disabled" : ""}>`;
+        body = `<input type="text" class="text-input" data-p="${pi}" data-k="${s.k}" value="${esc(vals[s.k])}" lang="en" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="English"${state.timeUp ? " disabled" : ""}>`;
       } else {
         const btn = (v, text, aria) =>
           `<button type="button" class="mark${vals[s.k] === v ? " on" : ""}" data-p="${pi}" data-k="${s.k}" data-v="${v}" aria-label="${aria}"${state.timeUp ? " disabled" : ""}>${text}</button>`;
@@ -231,10 +231,9 @@ function renderQuestion(qi) {
     });
   });
 
-  // 記述欄：半角英数字・記号のみ受け付ける（日本語入力がオンでも，パスワード欄と同様に英字のまま入る）．
-  // 再描画せずに状態だけ更新する
+  // 記述欄：再描画せずに状態だけ更新する
   $app.querySelectorAll("input.text-input").forEach(inp => {
-    const save = () => {
+    inp.addEventListener("input", () => {
       if (state.timeUp) return;
       state.answers[qi][+inp.dataset.p][+inp.dataset.k] = inp.value;
       const box = $app.querySelector(`[data-box="${inp.dataset.p}-${inp.dataset.k}"]`);
@@ -244,42 +243,9 @@ function renderQuestion(qi) {
         box.textContent = blank ? box.dataset.label : box.dataset.label + "✓";
       }
       renderPager();
-    };
-    const clean = () => { const c = inp.value.replace(NON_ALPHA, ""); if (c !== inp.value) inp.value = c; };
-
-    // 半角英字（A〜Z, a〜z）以外のキーは受け付けない．
-    // 日本語入力がオンのとき，文字キーは key="Process"（keyCode 229）で届く．変換を始めさせず，押されたキーが英字ならそのまま入力する
-    inp.addEventListener("keydown", e => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const composing = e.isComposing || e.keyCode === 229 || e.key === "Process";
-      if (composing) {
-        if (!CHAR_KEY.test(e.code)) return;
-        e.preventDefault();
-        const m = /^Key([A-Z])$/.exec(e.code);
-        if (!m || state.timeUp || inp.disabled) return;
-        const upper = e.shiftKey !== e.getModifierState("CapsLock");
-        inp.setRangeText(upper ? m[1] : m[1].toLowerCase(), inp.selectionStart, inp.selectionEnd, "end");
-        inp.dispatchEvent(new Event("input", { bubbles: true }));
-      } else if (e.key.length === 1 && !/[A-Za-z]/.test(e.key)) {
-        e.preventDefault();     // 数字・記号・スペースなどは入力させない
-      }
-    });
-    inp.addEventListener("beforeinput", e => {
-      if (e.inputType === "insertCompositionText") e.preventDefault();
-    });
-    inp.addEventListener("compositionend", () => { clean(); save(); });
-    inp.addEventListener("input", e => {
-      if (e.isComposing) return;
-      clean();
-      save();
     });
   });
 }
-
-// 半角英字以外
-const NON_ALPHA = /[^A-Za-z]/g;
-// 文字を入力するキー（日本語入力中でも，これらは入力させない／英字に置き換える）
-const CHAR_KEY = /^(Key[A-Z]|Digit\d|Numpad\d|Space|Minus|Equal|Comma|Period|Slash|Semicolon|Quote|Backquote|Bracket(Left|Right)|Backslash|Intl(Yen|Ro))$/;
 
 function renderFinal() {
   const unanswered = questions.map((_, i) => i).filter(i => !isAnswered(i)).map(i => i + 1);

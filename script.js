@@ -85,6 +85,7 @@ function renderStart() {
   $app.innerHTML = `
   <section class="card start-box">
     <h2>試験について</h2>
+    <div class="staff-check"><label><input type="checkbox" class="agree" id="staffCheck"><span><span class="staff-tag">【面接担当者へ】</span><br><strong>試験を始める前に，受験者に<u>計算用紙(1枚)</u>と<u>筆記用具</u>を用意してください．</strong>（用意したらチェックを入れてください）</span></label></div>
     <p>注意事項をよく読んでください．赤枠の項目には，読んだことを示すチェックを入れてください．</p>
     <ul class="notes check-list">
       ${notes.map((n, i) => n.warn
@@ -94,7 +95,7 @@ function renderStart() {
     <label for="nameInput">お名前（必須）</label>
     <input id="nameInput" type="text" value="${esc(state.name)}" placeholder="例：日暮里 太郎" autocomplete="name">
     <p class="center" style="margin-top:24px"><button class="btn primary big" id="startBtn" type="button" disabled>試験を始める</button></p>
-    <p class="center hint-start" id="startHint">赤枠の項目にチェックし，お名前を入力すると始められます．</p>
+    <p class="center hint-start" id="startHint">青枠（教室担当者）と赤枠の項目にチェックし，お名前を入力すると始められます．</p>
   </section>`;
   const input = document.getElementById("nameInput");
   input.addEventListener("input", () => { state.name = input.value; update(); });

@@ -465,3 +465,9 @@ kbd { border: 1px solid #999; border-bottom-width: 2px; border-radius: 4px; padd
 .kb-key.hot { fill: #ffd54f; stroke: #d32f2f; stroke-width: 2.5; }
 .kb-txt { fill: #444; }
 .kb-txt.hot { fill: #b71c1c; font-weight: bold; }
+
+/* 教室担当者向けのチェック（青枠） */
+.staff-check { margin: 4px 0 14px; padding: 8px 12px; border: 2px solid #1a56db; border-radius: 6px; background: #fff; color: #1a56db; }
+.staff-check label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; font-weight: normal; margin: 0; }
+.staff-check input[type="checkbox"] { width: 20px; height: 20px; margin-top: 4px; flex: none; cursor: pointer; }
+.staff-tag { font-weight: bold; }

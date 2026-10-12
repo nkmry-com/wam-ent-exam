@@ -1,6 +1,6 @@
 "use strict";
 /* 英語の科目データ（100点満点）
-   問1 英単語（日本語→英語・記述）30点（10題）／ 問2 英文法10題（選択・記述）40点 ／ 問3 長文読解 30点
+   問1 英単語（日本語→英語・記述）6題・30点 ／ 問2 英文法8題（選択・記述）40点 ／ 問3 長文読解 30点
    tpl の D＝選択（①〜④），T＝記述（英語を入力）．ans は D なら "1"〜"4"，T なら文字列（別解は配列）．
    p.prompt は小問の設問文（HTML）．p.label の番号が設問文の横に並ぶ．{L} は設問文中の空所． */
 const ENG_BLANK = "{L}";
@@ -14,7 +14,7 @@ const optsV = (...a) => `<span class="opts-v">${a.map((x, i) => `<span>${CIRCLED
 SUBJECTS.english = {
   id: "english",
   name: "英語",
-  timeLimitMin: 10,          // 制限時間（分）
+  timeLimitMin: 8,           // 制限時間（分）
   questionPoints: 10,        // 問題ごとの points を指定しない場合の既定値
   choices: ["1", "2", "3", "4"],   // マーク欄の選択肢（①〜④）
   markNote: `答えはマーク形式（番号を選ぶ）と記述形式（英語を入力する）があります．番号（①〜④）を1つ選ぶか，英語を入力してください．記述欄は半角英字で入力してください．大文字・小文字は区別しません．`,
@@ -24,16 +24,12 @@ SUBJECTS.english = {
       level: "英単語（中学3年レベル・日本語→英語）",
       text: `<p>次の日本語に当たる英単語を，英語で書きなさい．（ ）内の頭文字から始まる語を答えること．</p>`,
       parts: [
-        { label: "(1)", prompt: "「環境」（e）", tpl: [T], ans: ["environment"], explain: "environment＝環境．" },
-        { label: "(2)", prompt: "「経験」（e）", tpl: [T], ans: ["experience"], explain: "experience＝経験．" },
-        { label: "(3)", prompt: "「伝統」（t）", tpl: [T], ans: ["tradition"], explain: "tradition＝伝統．" },
-        { label: "(4)", prompt: "「発明する」（i）", tpl: [T], ans: ["invent"], explain: "invent＝発明する．" },
-        { label: "(5)", prompt: "「国際的な」（i）", tpl: [T], ans: ["international"], explain: "international＝国際的な．" },
-        { label: "(6)", prompt: "「社会」（s）", tpl: [T], ans: ["society"], explain: "society＝社会．" },
-        { label: "(7)", prompt: "「危険な」（d）", tpl: [T], ans: ["dangerous"], explain: "dangerous＝危険な．" },
-        { label: "(8)", prompt: "「決める，決心する」（d）", tpl: [T], ans: ["decide"], explain: "decide＝決める．" },
-        { label: "(9)", prompt: "「必要な」（n）", tpl: [T], ans: ["necessary"], explain: "necessary＝必要な．" },
-        { label: "(10)", prompt: "「文化」（c）", tpl: [T], ans: ["culture"], explain: "culture＝文化．" }
+        { label: "(1)", prompt: "「経験」（e）", tpl: [T], ans: ["experience"], explain: "experience＝経験．" },
+        { label: "(2)", prompt: "「伝統」（t）", tpl: [T], ans: ["tradition"], explain: "tradition＝伝統．" },
+        { label: "(3)", prompt: "「国際的な」（i）", tpl: [T], ans: ["international"], explain: "international＝国際的な．" },
+        { label: "(4)", prompt: "「社会」（s）", tpl: [T], ans: ["society"], explain: "society＝社会．" },
+        { label: "(5)", prompt: "「危険な」（d）", tpl: [T], ans: ["dangerous"], explain: "dangerous＝危険な．" },
+        { label: "(6)", prompt: "「必要な」（n）", tpl: [T], ans: ["necessary"], explain: "necessary＝必要な．" },
       ]
     },
     {
@@ -41,25 +37,21 @@ SUBJECTS.english = {
       level: "英文法（中学1〜3年・高校入試レベル）",
       text: `<p>次の各英文の空所に入る最も適切なものを選ぶか，適切な英語を書きなさい．（記述は，日本語訳と（ ）内の語を参考にすること．空所が2つのときは，欄にも1語ずつ入力する）</p>`,
       parts: [
-        { label: "(1)", prompt: `A friend of ${ENG_BLANK} lives in Osaka.${given("I")}${ja("私の友人の一人は大阪に住んでいます．")}`,
+        { label: "(1)", prompt: `A friend of ${ENG_BLANK} lives in Osaka.${ja("私の友人の一人は大阪に住んでいます．")}`,
           tpl: [T], ans: ["mine"], explain: "〈a friend of＋所有代名詞〉で「〜の友人（の一人）」．a friend of mine．" },
-        { label: "(2)", prompt: `When I came home, my mother ${ENG_BLANK} in the kitchen.${opts("cooks", "was cooking", "is cooking", "has cooked")}`,
-          tpl: [D], ans: ["2"], explain: "「帰宅したとき，母は料理をしていた」．過去のある時点で進行中の動作は過去進行形 was cooking．" },
-        { label: "(3)", prompt: `You ${ENG_BLANK} ${ENG_BLANK} to go there today.${given("have")}${ja("あなたは今日，そこへ行く必要はありません．")}`,
-          tpl: [T, " ", T], ans: [["don't", "do not", "don’t"], "have"], hint: "2つの欄に，1語ずつ入力しなさい．", explain: "don't have to ～＝「～する必要はない」（不必要）．must not（～してはいけない）との違いに注意．" },
-        { label: "(4)", prompt: `The more you practice, the ${ENG_BLANK} you will become.${given("good")}${ja("練習すればするほど，あなたは上手になるでしょう．")}`,
+        { label: "(2)", prompt: `The more you practice, the ${ENG_BLANK} you will become.${given("good")}${ja("練習すればするほど，あなたは上手になるでしょう．")}`,
           tpl: [T], ans: ["better"], explain: "〈the＋比較級，the＋比較級〉「～すればするほど…」．good－better－best．" },
-        { label: "(5)", prompt: `Tokyo is larger than any other ${ENG_BLANK} in Japan.${opts("cities", "city", "the city", "cities'")}`,
+        { label: "(3)", prompt: `Tokyo is larger than any other ${ENG_BLANK} in Japan.${opts("cities", "city", "the city", "cities'")}`,
           tpl: [D], ans: ["2"], explain: "〈比較級＋than any other＋単数名詞〉で最上級の意味（東京は日本のどの都市よりも大きい）．" },
-        { label: "(6)", prompt: `She has been sick in bed ${ENG_BLANK} last Sunday.${ja("彼女は先週の日曜日からずっと病気で寝ています．")}`,
+        { label: "(4)", prompt: `She has been sick in bed ${ENG_BLANK} last Sunday.${ja("彼女は先週の日曜日からずっと病気で寝ています．")}`,
           tpl: [T], ans: ["since"], explain: "継続を表す現在完了．起点（last Sunday）が示されているので since．期間なら for．" },
-        { label: "(7)", prompt: `My mother told me ${ENG_BLANK} up late.${opts("not to stay", "to not stay", "don't stay", "not staying")}`,
+        { label: "(5)", prompt: `My mother told me ${ENG_BLANK} up late.${opts("not to stay", "to not stay", "don't stay", "not staying")}`,
           tpl: [D], ans: ["1"], explain: "〈tell＋人＋to＋動詞〉の否定は〈tell＋人＋not to＋動詞〉．not to stay．" },
-        { label: "(8)", prompt: `He left the room without ${ENG_BLANK} goodbye.${given("say")}${ja("彼はさよならも言わずに部屋を出ていきました．")}`,
+        { label: "(6)", prompt: `He left the room without ${ENG_BLANK} goodbye.${given("say")}${ja("彼はさよならも言わずに部屋を出ていきました．")}`,
           tpl: [T], ans: ["saying"], explain: "前置詞 without のあとは動名詞．saying goodbye．" },
-        { label: "(9)", prompt: `This is the house ${ENG_BLANK} roof is red.${ja("これは屋根が赤い家です．")}`,
+        { label: "(7)", prompt: `This is the house ${ENG_BLANK} roof is red.${ja("これは屋根が赤い家です．")}`,
           tpl: [T], ans: ["whose"], explain: "先行詞 the house の「その屋根」＝所有を表す関係代名詞 whose．" },
-        { label: "(10)", prompt: `If I ${ENG_BLANK} studied harder, I could have passed the exam.${given("have")}${ja("もしもっと一生懸命勉強していたら，試験に合格できたのに．")}`,
+        { label: "(8)", prompt: `If I ${ENG_BLANK} studied harder, I could have passed the exam.${given("have")}${ja("もしもっと一生懸命勉強していたら，試験に合格できたのに．")}`,
           tpl: [T], ans: ["had"], explain: "仮定法過去完了〈If＋主語＋had＋過去分詞，主語＋could have＋過去分詞〉．had studied．" }
       ]
     },

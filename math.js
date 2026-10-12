@@ -150,7 +150,7 @@ const MATH_QUESTIONS = [
 SUBJECTS.math = {
   id: "math",
   name: "数学",
-  timeLimitMin: 10,          // 制限時間（分）
+  timeLimitMin: 12,         // 制限時間（分）
   questionPoints: 10,        // 1題の満点
   choices: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],   // マーク欄の選択肢（⓪〜⑨）
   markNote: `答えはマーク形式です．式の中の <span class="box inline">ア</span> などの欄に対応する行から，数字（⓪〜⑨）を1つ選んでください．`,

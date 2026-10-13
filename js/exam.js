@@ -17,6 +17,7 @@ const state = {
   subject: "",             // 解答中の科目id（科目選択ページでは ""）
   answers: [],             // 解答中の科目の answers[問][小問][解答欄] = 選んだ値／入力した文字（未入力は ""）
   started: false,
+  staffOk: false,          // 面接担当者の確認が済んだか（開始ページ①→②）
   timeUp: false,           // 解答中の科目が時間切れか
   graded: false
 };
@@ -120,16 +121,36 @@ function buildNotes() {
   });
 }
 
+/* 開始ページは2段階：①面接担当者の確認（青枠）→ すべてチェックすると自動で ②受験者の注意事項・名前入力 へ進む */
 function renderStart() {
+  if (EXAM_SETTINGS.staffChecks.length && !state.staffOk) renderStaffCheck();
+  else renderExamineeStart();
+}
+
+function renderStaffCheck() {
   const staff = EXAM_SETTINGS.staffChecks;
+  $app.innerHTML = `
+  <section class="card start-box">
+    <h2>面接担当者の確認</h2>
+    ${staff.map((c, i) => `<div class="staff-check"><label><input type="checkbox" class="agree" id="staffCheck${i}"><span>${c.html}</span></label></div>`).join("")}
+    <p class="hint-start">すべてチェックすると，次のページ（受験者の注意事項）に自動で進みます．</p>
+  </section>`;
+  const boxes = [...$app.querySelectorAll(".agree")];
+  boxes.forEach(b => b.addEventListener("change", () => {
+    if (!boxes.every(x => x.checked)) return;
+    state.staffOk = true;
+    go(0);
+  }));
+}
+
+function renderExamineeStart() {
   const notes = buildNotes();
   const redCount = notes.filter(n => n.warn).length;
-  const hint = [staff.length ? "青枠（面接担当者）" : "", redCount ? "赤枠" : ""].filter(Boolean).join("と");
+  const hint = redCount ? "赤枠の項目にチェックし，" : "";
 
   $app.innerHTML = `
   <section class="card start-box">
     <h2>試験について</h2>
-    ${staff.map((c, i) => `<div class="staff-check"><label><input type="checkbox" class="agree" id="staffCheck${i}"><span>${c.html}</span></label></div>`).join("")}
     <p>注意事項をよく読んでください．赤枠の項目には，読んだことを示すチェックを入れてください．</p>
     <ul class="notes check-list">
       ${notes.map((n, i) => n.warn
@@ -139,7 +160,7 @@ function renderStart() {
     <label for="nameInput">お名前（必須）</label>
     <input id="nameInput" type="text" value="${esc(state.name)}" placeholder="${esc(EXAM_SETTINGS.namePlaceholder)}" autocomplete="name">
     <p class="center" style="margin-top:24px"><button class="btn primary big" id="startBtn" type="button" disabled>試験を始める</button></p>
-    <p class="center hint-start" id="startHint">${hint ? hint + "の項目にチェックし，" : ""}お名前を入力すると始められます．</p>
+    <p class="center hint-start" id="startHint">${hint}お名前を入力すると始められます．</p>
   </section>`;
 
   const input = document.getElementById("nameInput");

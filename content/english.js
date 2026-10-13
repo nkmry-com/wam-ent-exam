@@ -84,7 +84,7 @@ const ENGLISH_QUESTIONS = [
         2, "that は直前の祖母の言葉（若いころ，お金がなくて本をたくさん読めなかった）を指す．"),
       choicePart(`本文の内容に合っているものを選びなさい．${optsV("Emi's grandmother gave many books to the library.", "Emi's friends put old books in a room in the community center.", "The library is in a new building in the city.", "The library has about fifty books.")}`,
         2, "第2段落 2文目．Her friends collected old books and put them in a room in the community center．"),
-      textPart(`Emi の言葉に合うように，空所に入る英語1語を書きなさい．<br>Emi learned that a small ${BLANK} can change a town.`,
+      textPart(`Emi の言葉に合うように，空所に入る英語1語を本文中から抜き出して書きなさい．<br>Emi learned that a small ${BLANK} can change a town.`,
         "action", "第3段落．a small action can change a town．")
     ]
   }

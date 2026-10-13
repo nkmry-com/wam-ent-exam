@@ -139,6 +139,7 @@ function renderStaffCheck() {
   boxes.forEach(b => b.addEventListener("change", () => {
     if (!boxes.every(x => x.checked)) return;
     state.staffOk = true;
+    enterFullscreen();          // チェックの操作中に全画面へ切り替える（ブラウザは操作がないと全画面にできない）
     go(0);
   }));
 }

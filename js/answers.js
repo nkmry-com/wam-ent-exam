@@ -1,17 +1,25 @@
 "use strict";
-/* 科目データは data.js / math.js / english.js．?subject=english のように科目を指定（既定は数学） */
-useSubject(subjectFromURL() || "math");
-document.getElementById("ansTitle").textContent = `WAM日暮里校 アルバイト用試験〔${subject.name}〕　解答・解説`;
-document.title = `解答・解説〔${subject.name}〕`;
-document.getElementById("subjectLinks").innerHTML = SUBJECT_ORDER.filter(id => SUBJECTS[id]).map(id => `<a class="subject-link${id === subject.id ? " on" : ""}" href="?subject=${id}">${SUBJECTS[id].name}</a>`).join("");
+/* 解答・解説ページ（ans.html）の処理
+   ?subject=english のように科目を指定する（省略時は最初の科目）．問題の中身は content/、共通ルールは js/core.js */
+
+const ids = subjectIds();
+useSubject(subjectFromURL() || ids[0]);
 
 const $app = document.getElementById("app");
 const $toc = document.getElementById("toc");
 
+/* ===== 見出し・科目の切り替えリンク ===== */
+document.getElementById("ansTitle").textContent = `${EXAM_SETTINGS.answerTitle}〔${subject.name}〕　解答・解説`;
+document.title = `解答・解説〔${subject.name}〕`;
+document.getElementById("subjectLinks").innerHTML = ids
+  .map(id => `<a class="subject-link${id === subject.id ? " on" : ""}" href="?subject=${id}">${SUBJECTS[id].name}</a>`)
+  .join("");
+
+/* ===== 問題ごとの解答・解説 ===== */
 $app.innerHTML = questions.map((q, qi) => {
-  let idx = 0;
+  let idx = 0;                                   // 解答欄の記号（ア，イ…）は問題ごとに振り直す
   const parts = q.parts.map((p, pi) => {
-    // マーク欄の記号（ア，イ，…）と正解の対応
+    // 解答欄の記号（ア，イ，…）と正解の対応
     const marks = [];
     p.tpl.forEach(t => { if (isSlot(t)) marks.push(LABELS[idx++]); });
     const key = marks.map((m, k) => `${m}＝${answerList(p.ans[k]).join(" / ")}`).join("　");
@@ -31,6 +39,7 @@ $app.innerHTML = questions.map((q, qi) => {
   </section>`;
 }).join("");
 
+/* ===== 目次（問題番号ボタン） ===== */
 $toc.innerHTML = questions.map((_, i) => `<button type="button" data-i="${i + 1}">${i + 1}</button>`).join("");
 $toc.addEventListener("click", e => {
   const b = e.target.closest("button");

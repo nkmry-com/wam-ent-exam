@@ -1,26 +1,31 @@
 "use strict";
-/* 科目データ・図・formatAnswer などは data.js / math.js / english.js
-   流れ：開始ページ → 科目選択（ハブ）→ 科目を解く → 科目を終了 → ハブ → … → 全科目終了後に担当者が採点 */
+/* 受験画面（index.html）のメイン処理
+   流れ：開始ページ → 科目選択 → 科目を解く → 科目を終了 → 科目選択 → … → 全科目終了後に担当者が採点
+   問題の中身は content/、共通ルールは js/core.js
 
-const RELOAD_ICON = `<svg class="reload-icon" viewBox="0 0 24 24" role="img" aria-label="リロードのアイコン"><path fill="currentColor" d="M17.65 6.35A7.96 7.96 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>`;
+   目次：1 状態 / 2 画面の部品 / 3 科目の開始・終了 / 4 画面（開始・科目選択・問題・最終・採点結果）
+        5 ページ移動 / 6 タイマー / 7 全画面表示 / 8 確認ダイアログ / 9 起動 */
 
-const IDS = SUBJECT_ORDER.filter(id => SUBJECTS[id]);
 
-/* ===== 状態 ===== */
+/* ===== 1. 状態 ===== */
+const IDS = subjectIds();                       // 出題する科目のid（表示順）
+
 const state = {
-  view: "start",           // start / hub / q（問題）/ final（科目の最終ページ）/ result
+  view: "start",           // start / hub（科目選択）/ q（問題）/ final（科目の最終ページ）/ result（採点結果）
   page: 0,                 // 科目内のページ：1〜N:各問題 N+1:最終ページ
   name: "",
-  subject: "",             // 解答中の科目id
-  answers: [],             // 解答中の科目の answers[問][小問] = マーク欄ごとの選択値（未選択は ""）
+  subject: "",             // 解答中の科目id（科目選択ページでは ""）
+  answers: [],             // 解答中の科目の answers[問][小問][解答欄] = 選んだ値／入力した文字（未入力は ""）
   started: false,
   timeUp: false,           // 解答中の科目が時間切れか
   graded: false
 };
+
 // 科目ごとの進行状況。status: idle（未着手）/ running（解答中）/ done（終了）
 const S = {};
 IDS.forEach(id => { S[id] = { status: "idle", answers: null, timeUp: false }; });
-let LAST = 0;
+
+let LAST = 0;              // 解答中の科目の最終ページ番号（問題数＋1）
 let TIME_LIMIT_SEC = 0;
 
 const $app = document.getElementById("app");
@@ -32,13 +37,43 @@ const $bar = document.getElementById("progressBar");
 const $title = document.getElementById("examTitle");
 const $footer = document.querySelector(".site-footer");
 
+
+/* ===== 2. 画面の部品 ===== */
+const RELOAD_ICON = `<svg class="reload-icon" viewBox="0 0 24 24" role="img" aria-label="リロードのアイコン"><path fill="currentColor" d="M17.65 6.35A7.96 7.96 0 0 0 12 4C7.58 4 4.01 7.58 4.01 12S7.58 20 12 20c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>`;
+
 const partBlank = (qi, pi) => state.answers[qi][pi].every(blankVal);
 const isAnswered = qi => questions[qi].parts.some((_, pi) => !partBlank(qi, pi));
 const allDone = () => IDS.every(id => S[id].status === "done");
+
 const setTitle = suffix => {
-  $title.textContent = "WAM日暮里校  アルバイト採用試験" + (suffix ? `〔${suffix}〕` : "");
-  document.title = "採用試験" + (suffix ? `〔${suffix}〕` : "");
+  $title.textContent = EXAM_SETTINGS.title + (suffix ? `〔${suffix}〕` : "");
+  document.title = EXAM_SETTINGS.pageTitle + (suffix ? `〔${suffix}〕` : "");
 };
+
+// 記述問題の案内（半角/全角キーの位置を示すキーボード図）
+function figKeyboardSvg() {
+  const key = (x, y, w, label, hot, fs = 11) =>
+    `<rect x="${x}" y="${y}" width="${w}" height="30" rx="4" class="kb-key${hot ? " hot" : ""}"/>` +
+    `<text x="${x + w / 2}" y="${y + 19}" text-anchor="middle" font-size="${fs}" class="kb-txt${hot ? " hot" : ""}">${label}</text>`;
+  const row = (y, x0, items) => {
+    let x = x0;
+    return items.map(([label, w, hot, fs]) => { const s = key(x, y, w, label, hot, fs); x += w + 4; return s; }).join("");
+  };
+  return `<svg class="kb-svg" viewBox="0 0 232 140" role="img" aria-label="キーボードの左上にある「半角/全角」キーの位置を示す図">
+  ${row(4, 4, [["Esc", 34], ["F1", 34], ["F2", 34], ["F3", 34], ["F4", 34]])}
+  ${row(38, 4, [["半角/全角", 50, true, 10], ["1", 30], ["2", 30], ["3", 30], ["4", 30], ["5", 30]])}
+  ${row(72, 4, [["Tab", 44], ["Q", 30], ["W", 30], ["E", 30], ["R", 30], ["T", 30]])}
+  ${row(106, 4, [["英数", 52], ["A", 30], ["S", 30], ["D", 30], ["F", 30], ["G", 30]])}
+  </svg>`;
+}
+
+const imeNotice = () => `<div class="ime-notice">
+  <div class="ime-text"><strong>英語を入力する問題です．</strong><br>キーボードを半角英数字に切り替える場合は，キーボード左上の「<strong>半角/全角</strong>」キーを押してください．</div>
+  ${figKeyboardSvg()}
+</div>`;
+
+
+/* ===== 3. 科目の開始・終了 ===== */
 
 // 科目を始める（制限時間のタイマーはここで開始）
 function enterSubject(id) {
@@ -65,27 +100,36 @@ function finishSubject() {
   go(0);
 }
 
-/* ===== 描画 ===== */
+
+/* ===== 4. 画面 ===== */
+
+/* --- 4-1. 開始ページ（面接担当者向けチェック＋注意事項＋名前） --- */
+
+// EXAM_SETTINGS.notes を表示用の { text, warn } の一覧にする
+function buildNotes() {
+  const subjects = IDS.map(id => SUBJECTS[id]);
+  const ctx = {
+    count: subjects.length,
+    names: subjects.map(s => s.name).join("・"),
+    times: subjects.map(s => `${s.name}${s.timeLimitMin}分`).join("，"),
+    reloadIcon: RELOAD_ICON
+  };
+  return EXAM_SETTINGS.notes.flatMap(n => {
+    if (n.eachSubject) return subjects.map(s => ({ warn: n.warn, text: n.eachSubject(s) }));
+    return [{ warn: n.warn, text: typeof n.text === "function" ? n.text(ctx) : n.text }];
+  });
+}
+
 function renderStart() {
-  const times = IDS.map(id => `${SUBJECTS[id].name}${SUBJECTS[id].timeLimitMin}分`).join("，");
-  const notes = [
-    { text: `試験は${IDS.map(id => SUBJECTS[id].name).join("・")}の${IDS.length}科目です．<strong>すべての科目を解いてください．解く順番は自由です．</strong>` },
-    { text: `分からない問題は空欄（何も選ばない）のままで構いません．` },
-    ...IDS.map(id => ({ text: `【${SUBJECTS[id].name}】全${SUBJECTS[id].questions.length}題．${SUBJECTS[id].markNote}` })),
-    { text: `配点は各問題に表示されます．小問がある問題は，小問ごとに点数を等分します．` },
-    { text: `選び直すときは別のマークを押すか，選択中のマークをもう一度押すと解除できます．` },
-    { text: `科目の中では「前へ」「次へ」や上の番号で自由に行き来でき，選んだ答えは保持されます．` },
-    { text: `試験を始めると，このページには戻れません．採点後は，問題に戻れません．` },
-    { warn: true, text: `制限時間は科目ごとです（${times}）．科目を選んで始めた時点でその科目のタイマーが動き，時間が終了するとその科目の入力・編集ができなくなります．そのため，1題1題解き終わるごとに入力することをおすすめします．` },
-    { warn: true, text: `科目の最後のページで「この科目を終了する」を押すと，その科目には戻れません．見直しが終わってから押してください．` },
-    { warn: true, text: `すべての科目が終わったら，塾の担当者に声をかけてください．「採点」ボタンは担当者が押します（自分で押さないでください）．` },
-    { warn: true, text: `試験中はページをリロード（${RELOAD_ICON}）したり，ブラウザの戻る／閉じるを押したりしないでください．選んだ答えがすべて消えます．` },
-    { warn: true, text: `試験中は，Web検索や生成AI（ChatGPT など）の使用を禁止します．` }
-  ];
+  const staff = EXAM_SETTINGS.staffChecks;
+  const notes = buildNotes();
+  const redCount = notes.filter(n => n.warn).length;
+  const hint = [staff.length ? "青枠（面接担当者）" : "", redCount ? "赤枠" : ""].filter(Boolean).join("と");
+
   $app.innerHTML = `
   <section class="card start-box">
     <h2>試験について</h2>
-    <div class="staff-check"><label><input type="checkbox" class="agree" id="staffCheck"><span><span class="staff-tag">【面接担当者へ】</span><br><strong>試験を始める前に，受験者に<u>計算用紙(1枚)</u>と<u>筆記用具</u>を用意してください．</strong>（用意したらチェックを入れてください）</span></label></div>
+    ${staff.map((c, i) => `<div class="staff-check"><label><input type="checkbox" class="agree" id="staffCheck${i}"><span>${c.html}</span></label></div>`).join("")}
     <p>注意事項をよく読んでください．赤枠の項目には，読んだことを示すチェックを入れてください．</p>
     <ul class="notes check-list">
       ${notes.map((n, i) => n.warn
@@ -93,20 +137,22 @@ function renderStart() {
         : `<li>${n.text}</li>`).join("")}
     </ul>
     <label for="nameInput">お名前（必須）</label>
-    <input id="nameInput" type="text" value="${esc(state.name)}" placeholder="例：日暮里 太郎" autocomplete="name">
+    <input id="nameInput" type="text" value="${esc(state.name)}" placeholder="${esc(EXAM_SETTINGS.namePlaceholder)}" autocomplete="name">
     <p class="center" style="margin-top:24px"><button class="btn primary big" id="startBtn" type="button" disabled>試験を始める</button></p>
-    <p class="center hint-start" id="startHint">青枠（教室担当者）と赤枠の項目にチェックし，お名前を入力すると始められます．</p>
+    <p class="center hint-start" id="startHint">${hint ? hint + "の項目にチェックし，" : ""}お名前を入力すると始められます．</p>
   </section>`;
-  const input = document.getElementById("nameInput");
-  input.addEventListener("input", () => { state.name = input.value; update(); });
 
-  const boxes = [...$app.querySelectorAll(".agree")];
+  const input = document.getElementById("nameInput");
   const startBtn = document.getElementById("startBtn");
+  const boxes = [...$app.querySelectorAll(".agree")];
+
+  // すべてチェックされ，名前が入力されたら「試験を始める」を押せる
   const update = () => {
-    const all = boxes.every(b => b.checked) && state.name.trim() !== "";
-    startBtn.disabled = !all;
-    document.getElementById("startHint").style.visibility = all ? "hidden" : "visible";
+    const ok = boxes.every(b => b.checked) && state.name.trim() !== "";
+    startBtn.disabled = !ok;
+    document.getElementById("startHint").style.visibility = ok ? "hidden" : "visible";
   };
+  input.addEventListener("input", () => { state.name = input.value; update(); });
   boxes.forEach(b => b.addEventListener("change", update));
   startBtn.addEventListener("click", () => {
     if (startBtn.disabled) return;
@@ -117,7 +163,7 @@ function renderStart() {
   update();
 }
 
-// 科目選択ページ
+/* --- 4-2. 科目選択ページ --- */
 function renderHub() {
   const label = { idle: "未着手", running: "解答中", done: "終了" };
   const cards = IDS.map(id => {
@@ -130,6 +176,7 @@ function renderHub() {
     </div>`;
   }).join("");
   const remain = IDS.filter(id => S[id].status !== "done");
+
   $app.innerHTML = `
   <section class="card center">
     <h2>科目選択</h2>
@@ -139,6 +186,7 @@ function renderHub() {
     ${allDone() ? `<p class="finish-note">塾の担当者に声をかけてください．<br>下の「採点」ボタンは担当者が押しますので，自分では押さないでください．</p>
     <p><button class="btn primary big" id="gradeBtn" type="button">採点</button></p>` : ""}
   </section>`;
+
   $app.querySelectorAll(".subject-start").forEach(b => b.addEventListener("click", () => {
     const sub = SUBJECTS[b.dataset.id];
     askConfirm(`<strong>${sub.name}</strong>を始めます．`, `今からタイマー（${sub.timeLimitMin}分）が動き出します．`, "始める", () => enterSubject(b.dataset.id));
@@ -147,36 +195,17 @@ function renderHub() {
   if (g) g.addEventListener("click", grade);
 }
 
-/* ===== 記述問題の案内（半角/全角キーの位置を示すキーボード図） ===== */
-function figKeyboardSvg() {
-  const key = (x, y, w, label, hot, fs = 11) =>
-    `<rect x="${x}" y="${y}" width="${w}" height="30" rx="4" class="kb-key${hot ? " hot" : ""}"/>` +
-    `<text x="${x + w / 2}" y="${y + 19}" text-anchor="middle" font-size="${fs}" class="kb-txt${hot ? " hot" : ""}">${label}</text>`;
-  const row = (y, x0, items) => {
-    let x = x0;
-    return items.map(([label, w, hot, fs]) => { const s = key(x, y, w, label, hot, fs); x += w + 4; return s; }).join("");
-  };
-  return `<svg class="kb-svg" viewBox="0 0 232 140" role="img" aria-label="キーボードの左上にある「半角/全角」キーの位置を示す図">
-  ${row(4, 4, [["Esc", 34], ["F1", 34], ["F2", 34], ["F3", 34], ["F4", 34]])}
-  ${row(38, 4, [["半角/全角", 50, true, 10], ["1", 30], ["2", 30], ["3", 30], ["4", 30], ["5", 30]])}
-  ${row(72, 4, [["Tab", 44], ["Q", 30], ["W", 30], ["E", 30], ["R", 30], ["T", 30]])}
-  ${row(106, 4, [["英数", 52], ["A", 30], ["S", 30], ["D", 30], ["F", 30], ["G", 30]])}
-  </svg>`;
-}
-
-const imeNotice = () => `<div class="ime-notice">
-  <div class="ime-text"><strong>英語を入力する問題です．</strong><br>キーボードを半角英数字に切り替える場合は，キーボード左上の「<strong>半角/全角</strong>」キーを押してください．</div>
-  ${figKeyboardSvg()}
-</div>`;
-
+/* --- 4-3. 問題ページ --- */
 function renderQuestion(qi) {
   const q = questions[qi];
-  let labelIdx = 0;
+  let labelIdx = 0;                              // 解答欄の記号（ア，イ…）は問題ごとに振り直す
 
   const parts = q.parts.map((p, pi) => {
     const vals = state.answers[qi][pi];
     let k = 0;
     const slots = [];
+
+    // 答えの表示形（tpl）。解答欄は枠で表示する
     const formula = p.tpl.map(t => {
       if (FRAC_HTML[t]) return FRAC_HTML[t];
       if (!isSlot(t)) return esc(t);
@@ -188,10 +217,10 @@ function renderQuestion(qi) {
       return `<span class="box${blank ? "" : " filled"}" data-box="${pi}-${slot.k}" data-label="${slot.label}" data-text="${slot.text ? 1 : 0}">${shown}</span>`;
     }).join("");
 
+    // 解答欄ごとの入力部（記述欄＝入力ボックス／マーク欄＝選択肢ボタン）
     const rows = slots.map(s => {
       let body;
       if (s.text) {
-        // 記述欄：英語入力用のボックス
         body = `<input type="text" class="text-input" data-p="${pi}" data-k="${s.k}" value="${esc(vals[s.k])}" lang="en" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="English"${state.timeUp ? " disabled" : ""}>`;
       } else {
         const btn = (v, text, aria) =>
@@ -219,6 +248,7 @@ function renderQuestion(qi) {
     ${parts}
   </section>`;
 
+  // マーク欄：押すと選択，選択中のものをもう一度押すと解除
   $app.querySelectorAll("button.mark").forEach(btn => {
     btn.addEventListener("click", () => {
       if (state.timeUp) return;                 // 時間切れ後は変更不可
@@ -248,6 +278,7 @@ function renderQuestion(qi) {
   });
 }
 
+/* --- 4-4. 科目の最終ページ --- */
 function renderFinal() {
   const unanswered = questions.map((_, i) => i).filter(i => !isAnswered(i)).map(i => i + 1);
   const left = IDS.filter(id => S[id].status === "idle").map(id => SUBJECTS[id].name);
@@ -266,6 +297,7 @@ function renderFinal() {
   });
 }
 
+/* --- 4-5. 採点結果（全科目） --- */
 function grade() {
   state.graded = true;
   state.view = "result";
@@ -275,6 +307,7 @@ function grade() {
   $pager.style.display = "none";
   document.body.style.paddingBottom = "24px";
   setTitle("");
+
   let score = 0, blank = 0, total = 0;
   const summaries = [];
   const sections = IDS.map(id => {
@@ -283,6 +316,7 @@ function grade() {
     state.answers = S[id].answers;
     let sScore = 0;
     const sTotal = subjectTotal(questions);
+
     const blocks = questions.map((q, qi) => {
       let qScore = 0;
       const rows = q.parts.map((p, pi) => {
@@ -301,6 +335,7 @@ function grade() {
       sScore += qScore;
       return `<div class="result-q"><h3>問${qi + 1}　<small>${q.level}</small><span class="q-score">${qScore}/${qPoints(q)}</span></h3>${rows}</div>`;
     }).join("");
+
     score += sScore; total += sTotal;
     summaries.push(`${subject.name} ${sScore}/${sTotal}`);
     return `<h2 class="subject-heading">${subject.name}　<span class="q-score">${sScore}/${sTotal}</span></h2>${blocks}`;
@@ -309,7 +344,7 @@ function grade() {
   const pct = Math.round(score / total * 100);
   $app.innerHTML = `
   <section class="card">
-    <p class="print-only print-meta">${esc(document.querySelector(".site-header h1").textContent.trim())}　／　${new Date().toLocaleString("ja-JP")}</p>
+    <p class="print-only print-meta">${esc(EXAM_SETTINGS.title.trim())}　／　${new Date().toLocaleString("ja-JP")}</p>
     <h2 class="center">採点結果</h2>
     <p class="staff-note no-print"><strong>【教室担当者の方へ】</strong>画面を閉じるには，キーボードの <kbd>Esc</kbd> キーを押してください（全画面表示が解除されます）．</p>
     <p class="finish-note no-print">このページをリロード（${RELOAD_ICON}）したり，ブラウザの戻る／閉じるを押したりしないでください．試験結果が閲覧できなくなります．</p>
@@ -325,6 +360,10 @@ function grade() {
   window.scrollTo(0, 0);
 }
 
+
+/* ===== 5. ページ移動 ===== */
+
+// 上部の問題番号ボタン
 function renderPager() {
   $pager.innerHTML = "";
   const add = (label, page, cls) => {
@@ -373,10 +412,8 @@ function go(page) {
 $prev.addEventListener("click", () => go(state.page - 1));
 $next.addEventListener("click", () => go(state.page + 1));
 
-go(0);
 
-
-/* ===== タイマー（科目ごと．科目を始めた時点で開始） ===== */
+/* ===== 6. タイマー（科目ごと．科目を始めた時点で開始） ===== */
 let timerId = null, deadline = 0;
 
 function drawTimer() {
@@ -410,7 +447,8 @@ function stopTimer() {
   document.getElementById("timer").hidden = true;
 }
 
-/* ===== 全画面表示（不正防止） ===== */
+
+/* ===== 7. 全画面表示（不正防止） ===== */
 function enterFullscreen() {
   const el = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen;
@@ -433,7 +471,8 @@ function updateFsGuard() {
 document.addEventListener("fullscreenchange", updateFsGuard);
 document.addEventListener("webkitfullscreenchange", updateFsGuard);
 
-/* ===== ページ内の確認ダイアログ（ブラウザのアラートは使わない） ===== */
+
+/* ===== 8. 確認ダイアログ（ブラウザのアラートは使わない） ===== */
 function askConfirm(title, note, okLabel, onOk) {
   const ov = document.createElement("div");
   ov.className = "fs-guard dlg";
@@ -447,3 +486,7 @@ function askConfirm(title, note, okLabel, onOk) {
     if (r === "ok") onOk();
   });
 }
+
+
+/* ===== 9. 起動 ===== */
+go(0);

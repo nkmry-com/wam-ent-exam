@@ -5,10 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>採用試験</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
-<header class="site-header">
+  <header class="site-header">
     <div class="header-top">
       <h1 id="examTitle">WAM日暮里校  アルバイト採用試験</h1>
       <div id="timer" class="timer" hidden aria-live="off"><span class="timer-label">残り時間</span><span id="timerValue">--:--</span></div>
@@ -27,10 +28,13 @@
     <button id="nextBtn" class="btn primary" type="button">次へ →</button>
   </footer>
 
-  <script src="data.js"></script>
-  <script src="math.js"></script>
-  <script src="english.js"></script>
-<script src="script.js"></script>
+  <!-- 読み込み順：共通ルール → 設定 → 科目（問題）→ 画面の処理 -->
+  <script src="js/core.js"></script>
+  <script src="content/settings.js"></script>
+  <script src="content/figures.js"></script>
+  <script src="content/math.js"></script>
+  <script src="content/english.js"></script>
+  <script src="js/exam.js"></script>
 </body>
 
 </html>

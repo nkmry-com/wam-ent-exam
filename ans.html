@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>WAM日暮里校 アルバイト用試験 解答・解説</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body class="ans-page">
 <header class="site-header">
@@ -15,9 +15,12 @@
 
 <main id="app"></main>
 
-<script src="data.js"></script>
-<script src="math.js"></script>
-<script src="english.js"></script>
-<script src="ans.js"></script>
+<!-- 読み込み順：共通ルール → 設定 → 科目（問題）→ 画面の処理 -->
+<script src="js/core.js"></script>
+<script src="content/settings.js"></script>
+<script src="content/figures.js"></script>
+<script src="content/math.js"></script>
+<script src="content/english.js"></script>
+<script src="js/answers.js"></script>
 </body>
 </html>
